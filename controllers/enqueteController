@@ -1,0 +1,11 @@
+
+const { body, validationResult } = require('express-validator')
+const path = require('path');
+
+const mensageController = {
+    index: async (req , res) => {
+        res.render('index', { title: 'Express' });
+    },
+}
+
+module.exports = mensageController;
