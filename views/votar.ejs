@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Site demo da enquete</title>
+  <link rel='stylesheet' href='/stylesheets/style.css' />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css"
+    integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+  <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" />
+
+</head>
+
+<body>
+  <script>
+    function goBack() {
+      window.history.back()
+    }
+  </script>
+
+  <div id="cabecalho" href="sobre.html">
+    <div class="row justify-content-center">
+      <button class="btn btn-dark btn-lg" onclick="goBack()"><img src="images/oscarLogo.png" alt=""
+          style="width: 300px; height: 200px;"></button>
+    </div>
+
+  </div>
+  <section class="vh-100" style="background-color: #131313;">
+    <div class="container py-5 h-100">
+      <div class="row d-flex justify-content-center align-items-center h-100">
+        <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+
+          <div class="container">
+            <div class="row" style="margin-left: -175px;">
+              <div>
+                <div class="tab-content">
+                  <div role="tabpanel" class="tab-pane active" id="test1">
+                    <div id="imgGalleryCaruosel1" class="carousel slide" data-ride="carousel" data-interval="false">
+                      <div class="carousel-inner">
+                        <% for(var i=0; i<competicoes.length; i++) {%>
+
+                          <div class="item <%= i==0?'active':''%>">
+                            <div class="form-control" style="width: 100%;height: 100%;text-align: center;">
+                              <label style="font-weight: bold;font-size: 35px; margin-bottom:15px;">
+                                <%= competicoes[i].pergunta %>
+                              </label>
+                              <br>
+                              <div class="row justify-content-center">
+                                <div class="col-auto">
+                                  <table id="tabelaOpcoes" class="table table-responsive">
+                                    <tbody>
+                                      <% for(var i2=0; i2<opcoes.length; i2++) {%>
+                                        <% if(i2%3==0 || i2==0){%>
+                                          <% if(i2 !=0 ) {%>
+                                            </tr>
+                                            <% }%>
+                                              <tr justify-content-md-center>
+                                                <% } %>
+
+                                                  <td>
+                                                    <a style="align-items: center;">
+                                                      <img src="images/<%= opcoes[i2].imagem%>.jpg" alt="otario"
+                                                        style="width: 200px;height: 200px; "
+                                                        id="opcao<%=i2%>_pergunta<%=i%>"
+                                                        onclick="botaoEscolha(this.id);"
+                                                        pergunta="<%= competicoes[i].id %>"
+                                                        resposta="<%= opcoes[i2].id %>"
+                                                        ultimaPergunta="<%= i == (competicoes.length-1) ? 'true':'false' %>">
+                                                      <br>
+                                                      <label for="teste">
+                                                        <%=opcoes[i2].nome %>
+                                                      </label>
+                                                    </a>
+                                                  </td>
+
+                                                  <% if(i2==opcoes.length-1){%>
+                                              </tr>
+                                              <% } %>
+                                                <% } %>
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div class="d-none">
+                              <input type="text" name="voto<%=competicoes[i].id %>">
+                            </div>
+                          </div>
+
+                          <% } %>
+                      </div>
+                      <div class="carousel-controls d-none">
+                        <a class="left carousel-control" href="#imgGalleryCaruosel1" data-slide="prev">
+                          <span class="glyphicon glyphicon-chevron-left"></span>
+                        </a>
+                        <a class="right carousel-control" href="#imgGalleryCaruosel1" data-slide="next" id="next">
+                          <span class="glyphicon glyphicon-chevron-right"></span>
+                        </a>
+
+                      </div>
+                      <form method="post" action="/votar" id="fomularioVoto">
+                        <% for(var i=0; i<competicoes.length; i++) {%>
+                          <div class="d-none">
+                            <input type="text" name="voto<%=competicoes[i].id %>">
+                          </div>
+                          <% } %>
+                      </form>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <style>
+            #cabecalho {
+              color: grey;
+              text-align: right;
+              background: #131313;
+              font-size: 70px;
+              padding-bottom: 30px;
+              padding-top: 30px;
+              font-family: serif;
+            }
+
+            input[type="radio"] {
+              position: relative;
+              display: none;
+            }
+
+            tr {
+              align-self: center;
+            }
+
+            .d-none {
+              display: none;
+            }
+          </style>
+
+          <script>
+            function botaoEscolha(id) {
+              botao = $('#' + id)
+              pergunta = botao.attr('pergunta');
+              resposta = botao.attr('resposta');
+              $('[name="voto' + pergunta + '"]').val(resposta);
+
+              console.log(botao.attr('ultimaPergunta'));
+              if (botao.attr('ultimaPergunta') == "false") {
+                $('#next').click();
+              } else {
+                $('#fomularioVoto').submit();
+              }
+            }
+          </script>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</body>
+
+</html>
+
+<style>
+  .bg-image-vertical {
+    position: relative;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: auto 100%;
+  }
+
+  @media (min-width: 1025px) {
+    .h-custom-2 {
+      height: 100%;
+    }
+
+    body {
+      background-color: #131313;
+      font-family: "Sofia", sans-serif;
+    }
+  }
+</style>

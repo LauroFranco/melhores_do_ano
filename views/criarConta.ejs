@@ -14,7 +14,7 @@
             <div class="card shadow-2-strong" style="border-radius: 1rem;">
               <div class="card-body p-5 text-center">
     
-                <h3 class="mb-5">Entrar na conta</h3>
+                <h3 class="mb-5">Cadastrar conta</h3>
     
                 <div class="form-outline mb-4">
                   <input name="email" type="email" id="typeEmailX-2" class="form-control form-control-lg" />
@@ -36,7 +36,10 @@
 
                 <hr class="my-4">
   
-    
+                    
+                <% if( typeof msg !== 'undefined') {%>
+                  <h5 style="color: red;"><%= msg %></h5>
+                <% } %>
               </div>
             </div>
           </div>

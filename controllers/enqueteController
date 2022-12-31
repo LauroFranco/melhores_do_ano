@@ -1,19 +1,235 @@
 
 const { body, validationResult } = require('express-validator')
 const path = require('path');
+const Sequelize = require("sequelize");
+const config = require("../configs/database");
+const bcrypt = require("bcrypt");
+const con = new Sequelize(config);
 
 const mensageController = {
-    index: async (req , res) => {
+    index: async (req, res) => {
         res.render('login');
     },
-    
-    cadastrar: async (req , res) => {
+
+    cadastrar: async (req, res) => {
         res.render('criarConta');
     },
-
-    efetuarCadastro: async (req , res) => {
-        console.log(req.body);
+    home: async (req, res) => {
+        const { user } = req.session;
+        console.log(user);
+        return res.render("home", {
+            user,
+        });
     },
+
+    efetuarCadastro: async (req, res) => {
+        nome = req.body.email;
+        senha = req.body.password;
+
+        const [user] = await con.query(
+            "select * from usuario where nome=:nome limit 1",
+            {
+                replacements: {
+                    nome,
+                },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        if (!user || !bcrypt.compareSync(senha, user.senha)) {
+            return res.render("login", {
+                msg: "Email ou senha errados!",
+            });
+        }
+
+        req.session.user = {
+            id: user.id,
+            name: user.nome,
+        };
+
+        return res.redirect("/home");
+    },
+    destroy: (req, res) => {
+        req.session = undefined;
+        return res.redirect("/login");
+    },
+
+    store: async (req, res) => {
+        nome = req.body.email;
+        senha = req.body.password;
+        const hashPassword = bcrypt.hashSync(senha, 10);
+
+        const [userExistente] = await con.query(
+            "select * from usuario where nome=:nome limit 1",
+            {
+                replacements: {
+                    nome,
+                },
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        if (userExistente) {
+            return res.render("criarConta", {
+                msg: "Email ja cadastrado",
+            });
+        }
+        const user = await con.query(
+            "INSERT INTO usuario (nome , senha) values (:nome, :password)",
+            {
+                replacements: {
+                    nome,
+                    password: hashPassword,
+                },
+                type: Sequelize.QueryTypes.INSERT,
+            }
+        );
+        if (!user) {
+            return res.render("criarConta", {
+                msg: "Erro ao cadastrar um usuario",
+            });
+        }
+        req.session.user = {
+            id: user.id,
+            name: user.nome,
+        };
+        return res.redirect("/home");
+    },
+
+    votar: async (req, res) => {
+        const competicoes = await con.query(
+            "select * from competicoes",
+            {
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        const opcoes = await con.query(
+            "select * from opcoes",
+            {
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+
+        return res.render("votar", {
+            competicoes,
+            opcoes
+        });
+    },
+    verResultados: async (req, res) => {
+        opcoesMaisVotadas = [];
+
+        const competicoes = await con.query(
+            "select * from competicoes",
+            {
+                type: Sequelize.QueryTypes.SELECT,
+            }
+        );
+        for(var i=0; i<competicoes.length; i++) {
+            opcoesMaisVotadas[i] = [];
+            opcoesMaisVotadas[i]['Frase'] =  competicoes[i].pergunta;
+            const grupoVotos = await con.query(
+                "select * from votos where competicoes_id=:competicao",
+                {
+                    replacements: {
+                        competicao:competicoes[i].id,
+                    },
+                    type: Sequelize.QueryTypes.SELECT,
+                }
+            );
+            for(var i2=0; i2<grupoVotos.length; i2++) {
+                if (opcoesMaisVotadas[i]['opcao_' +grupoVotos[i2].opcoes_id] !== undefined) {
+                    opcoesMaisVotadas[i]['opcao_' + grupoVotos[i2].opcoes_id] += 1
+                }else{
+                    opcoesMaisVotadas[i]['opcao_' +grupoVotos[i2].opcoes_id] = 1
+                }
+            }
+        }
+        
+        for (var i = 0; i < opcoesMaisVotadas.length; i++) {
+            MaiorOpcao = 1;
+            for (var i2 = 2; i2 < 16; i2++) {
+                if (opcoesMaisVotadas[i]['opcao_' + MaiorOpcao] !== undefined) {
+                    if (opcoesMaisVotadas[i]['opcao_' + i2] !== undefined) {
+                        MaiorOpcao = opcoesMaisVotadas[i]['opcao_' + i2] > opcoesMaisVotadas[i]['opcao_' + MaiorOpcao] ? i2 : MaiorOpcao;
+                    }
+                }else{
+                    if (opcoesMaisVotadas[i]['opcao_' + i2] !== undefined) {
+                        MaiorOpcao = i2;
+                    }
+                }
+            }
+            const [vencedorImagem] = await con.query(
+                "select * from opcoes where id=:id",
+                {
+                    replacements: {
+                        id:MaiorOpcao,
+                    },
+                    type: Sequelize.QueryTypes.SELECT,
+                }
+            );
+            opcoesMaisVotadas[i]['imagemVencedor'] = vencedorImagem.imagem;
+            opcoesMaisVotadas[i]['nomeVencedor'] = vencedorImagem.nome;
+        }
+
+
+
+        return res.render("verResultados", {
+            opcoesMaisVotadas
+        });
+        // res.render('verResultados');
+    },
+    CriarCompeticoes: async (req, res) => {
+        res.render('CriarCompeticoes');
+    },
+    
+    salvarCompeticoes: async (req, res) => {
+        pergunta = req.body.competicao;
+
+        const user = await con.query(
+            "INSERT INTO competicoes (pergunta) values (:pergunta)",
+            {
+                replacements: {
+                    pergunta,
+                },
+                type: Sequelize.QueryTypes.INSERT,
+            }
+        );
+        return res.redirect("/home");
+
+    },
+    efetuarVoto: async (req, res) => {
+        var data = req.body;
+        for(var key in data) {
+            idComp = key.replace("voto" , "");
+
+            await con.query("DELETE FROM votos where usuario_id=:usuario and competicoes_id=:competicao",
+            {
+                replacements: {
+                    competicao: idComp,
+                    usuario: req.session.user.id,  
+              },
+                type: Sequelize.QueryTypes.DELETE,
+            }
+            );
+            const voto = await con.query(
+                "INSERT INTO votos (opcoes_id , competicoes_id , usuario_id ) values (:opcao , :competicao , :usuario)",
+                {
+                    replacements: {
+                        competicao: idComp,
+                        opcao: data[key],
+                        usuario: req.session.user.id,
+                    },
+                    type: Sequelize.QueryTypes.INSERT,
+                }
+            );
+        }          
+
+
+
+        return res.redirect('/home');
+
+    },
+    
+
 
 }
 
